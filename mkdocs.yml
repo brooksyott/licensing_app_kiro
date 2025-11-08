@@ -1,0 +1,70 @@
+# License Management API Documentation
+site_name: License Management API
+site_description: A secure, scalable backend system for managing software licenses
+site_author: License Management Team
+
+# Repository
+# repo_name: your-org/license-management-api
+# repo_url: https://github.com/your-org/license-management-api
+
+# Theme
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+# Extensions
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+
+# Navigation
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start: getting-started/quick-start.md
+      - Configuration: getting-started/configuration.md
+      - Deployment: getting-started/deployment.md
+  - API Reference:
+      - Overview: api/overview.md
+      - Authentication: api/authentication.md
+      - Endpoints: api/endpoints.md
+      - Postman Collection: api/postman.md
+  - Architecture:
+      - Database Schema: architecture/database.md
+      - Design: architecture/design.md
+  - Development:
+      - Requirements: development/requirements.md
+      - Testing: development/testing.md
+      - Contributing: development/contributing.md
