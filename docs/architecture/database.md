@@ -35,7 +35,6 @@ erDiagram
         uuid Id PK
         varchar Name
         varchar ProductCode UK
-        varchar Version
         varchar Description
         timestamp CreatedAt
         timestamp UpdatedAt
@@ -127,7 +126,6 @@ Stores software products for which licenses can be issued.
 | Id | UUID | PRIMARY KEY | Unique identifier for the product |
 | Name | VARCHAR | NOT NULL, INDEXED | Product name (indexed for search performance) |
 | ProductCode | VARCHAR | NOT NULL, UNIQUE | Unique product code identifier |
-| Version | VARCHAR | NOT NULL | Product version |
 | Description | VARCHAR | NULLABLE | Optional product description |
 | CreatedAt | TIMESTAMP | NOT NULL | Timestamp when product was created (auto-managed) |
 | UpdatedAt | TIMESTAMP | NOT NULL | Timestamp when product was last updated (auto-managed) |

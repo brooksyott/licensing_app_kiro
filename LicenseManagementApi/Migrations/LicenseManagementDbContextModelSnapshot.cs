@@ -145,11 +145,9 @@ namespace LicenseManagementApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("SkuId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -165,11 +163,29 @@ namespace LicenseManagementApi.Migrations
 
                     b.HasIndex("RsaKeyId");
 
-                    b.HasIndex("SkuId");
-
                     b.HasIndex("Status");
 
                     b.ToTable("Licenses");
+                });
+
+            modelBuilder.Entity("LicenseManagementApi.Models.Entities.LicenseSku", b =>
+                {
+                    b.Property<Guid>("LicenseId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SkuId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("LicenseId", "SkuId");
+
+                    b.HasIndex("LicenseId");
+
+                    b.HasIndex("SkuId");
+
+                    b.ToTable("LicenseSkus");
                 });
 
             modelBuilder.Entity("LicenseManagementApi.Models.Entities.Product", b =>
@@ -194,10 +210,6 @@ namespace LicenseManagementApi.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Version")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -303,16 +315,28 @@ namespace LicenseManagementApi.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("LicenseManagementApi.Models.Entities.Sku", "Sku")
-                        .WithMany("Licenses")
-                        .HasForeignKey("SkuId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.Navigation("Customer");
 
                     b.Navigation("Product");
 
                     b.Navigation("RsaKey");
+                });
+
+            modelBuilder.Entity("LicenseManagementApi.Models.Entities.LicenseSku", b =>
+                {
+                    b.HasOne("LicenseManagementApi.Models.Entities.License", "License")
+                        .WithMany("LicenseSkus")
+                        .HasForeignKey("LicenseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LicenseManagementApi.Models.Entities.Sku", "Sku")
+                        .WithMany("LicenseSkus")
+                        .HasForeignKey("SkuId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("License");
 
                     b.Navigation("Sku");
                 });
@@ -333,6 +357,11 @@ namespace LicenseManagementApi.Migrations
                     b.Navigation("Licenses");
                 });
 
+            modelBuilder.Entity("LicenseManagementApi.Models.Entities.License", b =>
+                {
+                    b.Navigation("LicenseSkus");
+                });
+
             modelBuilder.Entity("LicenseManagementApi.Models.Entities.Product", b =>
                 {
                     b.Navigation("Licenses");
@@ -347,7 +376,7 @@ namespace LicenseManagementApi.Migrations
 
             modelBuilder.Entity("LicenseManagementApi.Models.Entities.Sku", b =>
                 {
-                    b.Navigation("Licenses");
+                    b.Navigation("LicenseSkus");
                 });
 #pragma warning restore 612, 618
         }

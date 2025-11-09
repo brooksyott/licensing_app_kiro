@@ -54,7 +54,7 @@ This document defines the requirements for a License Management API—a secure, 
 
 #### Acceptance Criteria
 
-1. THE License Management API SHALL provide an endpoint to create a Product with name, version, and description
+1. THE License Management API SHALL provide an endpoint to create a Product with name and description
 2. THE License Management API SHALL provide an endpoint to retrieve Product details by unique identifier
 3. THE License Management API SHALL provide an endpoint to update Product information
 4. THE License Management API SHALL provide an endpoint to delete a Product by unique identifier

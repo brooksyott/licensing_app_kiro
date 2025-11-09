@@ -27,7 +27,6 @@ public class ProductService : IProductService
                 Id = Guid.NewGuid(),
                 Name = request.Name,
                 ProductCode = request.ProductCode,
-                Version = request.Version,
                 Description = request.Description
             };
 
@@ -78,7 +77,6 @@ public class ProductService : IProductService
 
             product.Name = request.Name;
             product.ProductCode = request.ProductCode;
-            product.Version = request.Version;
             product.Description = request.Description;
 
             await _context.SaveChangesAsync();
@@ -190,7 +188,6 @@ public class ProductService : IProductService
             Id = product.Id,
             Name = product.Name,
             ProductCode = product.ProductCode,
-            Version = product.Version,
             Description = product.Description,
             CreatedAt = product.CreatedAt,
             UpdatedAt = product.UpdatedAt

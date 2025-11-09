@@ -12,5 +12,7 @@ public class Sku
 
     // Navigation properties
     public Product Product { get; set; } = null!;
-    public ICollection<License> Licenses { get; set; } = new List<License>();
+    
+    // Many-to-many relationship with Licenses
+    public ICollection<LicenseSku> LicenseSkus { get; set; } = new List<LicenseSku>();
 }
