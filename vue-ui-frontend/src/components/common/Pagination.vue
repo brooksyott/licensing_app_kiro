@@ -69,7 +69,7 @@ const handlePrevious = () => {
 
 .pagination-btn:hover:not(:disabled) {
   background-color: #f8f9fa;
-  border-color: #3498db;
+  border-color: #00A3AD;
 }
 
 .pagination-btn:disabled {

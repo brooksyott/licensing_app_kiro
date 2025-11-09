@@ -47,6 +47,16 @@
       "type": "string"
     },
     {
+      "key": "skuId2",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "skuId3",
+      "value": "",
+      "type": "string"
+    },
+    {
       "key": "rsaKeyId",
       "value": "",
       "type": "string"
@@ -80,11 +90,6 @@
                   "pm.test(\"Response has status field\", function () {",
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData).to.have.property('status');",
-                  "});",
-                  "",
-                  "pm.test(\"Response has version field\", function () {",
-                  "    var jsonData = pm.response.json();",
-                  "    pm.expect(jsonData).to.have.property('version');",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -331,7 +336,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Enterprise Suite\",\n  \"productCode\": \"ENT-001\",\n  \"version\": \"2.0.0\",\n  \"description\": \"Full-featured enterprise software suite\"\n}"
+              "raw": "{\n  \"name\": \"Enterprise Suite\",\n  \"productCode\": \"ENT-001\",\n  \"description\": \"Full-featured enterprise software suite\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/products",
@@ -435,7 +440,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Enterprise Suite Pro\",\n  \"productCode\": \"ENT-001\",\n  \"version\": \"2.1.0\",\n  \"description\": \"Enhanced enterprise software suite with advanced features\"\n}"
+              "raw": "{\n  \"name\": \"Enterprise Suite Pro\",\n  \"productCode\": \"ENT-001\",\n  \"description\": \"Enhanced enterprise software suite with advanced features\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/products/{{productId}}",
@@ -628,6 +633,90 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "skus", "{{skuId}}"]
             }
+          },
+          "response": []
+        },
+        {
+          "name": "Create SKU 2",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has id field\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('skuId2', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"name\": \"Enterprise Edition\",\n  \"skuCode\": \"ENT-001-ENT\",\n  \"description\": \"Enterprise tier with all features\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/skus",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "skus"]
+            },
+            "description": "Create a second SKU for testing multiple SKUs per license"
+          },
+          "response": []
+        },
+        {
+          "name": "Create SKU 3",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has id field\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('skuId3', jsonData.id);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"name\": \"Premium Support\",\n  \"skuCode\": \"ENT-001-SUP\",\n  \"description\": \"Premium support add-on\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/skus",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "skus"]
+            },
+            "description": "Create a third SKU for testing multiple SKUs per license"
           },
           "response": []
         },
@@ -840,13 +929,68 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"productId\": \"{{productId}}\",\n  \"skuId\": \"{{skuId}}\",\n  \"rsaKeyId\": \"{{rsaKeyId}}\",\n  \"licenseType\": \"Commercial\",\n  \"expirationDate\": \"2025-12-31T23:59:59Z\",\n  \"maxActivations\": 5\n}"
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"productId\": \"{{productId}}\",\n  \"skuIds\": [\n    \"{{skuId}}\"\n  ],\n  \"rsaKeyId\": \"{{rsaKeyId}}\",\n  \"licenseType\": \"Commercial\",\n  \"expirationDate\": \"2025-12-31T23:59:59Z\",\n  \"maxActivations\": 5\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/licenses",
               "host": ["{{baseUrl}}"],
               "path": ["api", "licenses"]
+            },
+            "description": "Create a new license with one or more SKUs. The skuIds field accepts an array of SKU IDs."
+          },
+          "response": []
+        },
+        {
+          "name": "Create License with Multiple SKUs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200 or 201\", function () {",
+                  "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has id field\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('id');",
+                  "    pm.collectionVariables.set('licenseId', jsonData.id);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has licenseKey\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('licenseKey');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has multiple SKUs\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('skus');",
+                  "    pm.expect(jsonData.skus).to.be.an('array');",
+                  "    pm.expect(jsonData.skus.length).to.be.greaterThan(1);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": \"{{customerId}}\",\n  \"productId\": \"{{productId}}\",\n  \"skuIds\": [\n    \"{{skuId}}\",\n    \"{{skuId2}}\",\n    \"{{skuId3}}\"\n  ],\n  \"rsaKeyId\": \"{{rsaKeyId}}\",\n  \"licenseType\": \"Enterprise\",\n  \"expirationDate\": \"2025-12-31T23:59:59Z\",\n  \"maxActivations\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/licenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "licenses"]
+            },
+            "description": "Create a new license with multiple SKUs. This example includes 3 SKUs from the same or different products."
           },
           "response": []
         },
@@ -865,6 +1009,23 @@
                   "    var jsonData = pm.response.json();",
                   "    pm.expect(jsonData).to.have.property('licenseKey');",
                   "    pm.expect(jsonData).to.have.property('status');",
+                  "});",
+                  "",
+                  "pm.test(\"Response has SKUs array\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('skus');",
+                  "    pm.expect(jsonData.skus).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test(\"Each SKU has required fields\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData.skus && jsonData.skus.length > 0) {",
+                  "        jsonData.skus.forEach(function(sku) {",
+                  "            pm.expect(sku).to.have.property('skuId');",
+                  "            pm.expect(sku).to.have.property('skuName');",
+                  "            pm.expect(sku).to.have.property('skuCode');",
+                  "        });",
+                  "    }",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -878,7 +1039,8 @@
               "raw": "{{baseUrl}}/api/licenses/{{licenseId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "licenses", "{{licenseId}}"]
-            }
+            },
+            "description": "Get a license by ID. Response includes all associated SKUs with their details."
           },
           "response": []
         },
@@ -993,7 +1155,92 @@
               "raw": "{{baseUrl}}/api/licenses/{{licenseId}}",
               "host": ["{{baseUrl}}"],
               "path": ["api", "licenses", "{{licenseId}}"]
+            },
+            "description": "Update license properties. All fields are optional."
+          },
+          "response": []
+        },
+        {
+          "name": "Update License SKUs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has updated SKUs\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('skus');",
+                  "    pm.expect(jsonData.skus).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
             }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skuIds\": [\n    \"{{skuId}}\",\n    \"{{skuId2}}\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/licenses/{{licenseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "licenses", "{{licenseId}}"]
+            },
+            "description": "Update the SKUs associated with a license. This will replace all existing SKU associations with the new ones provided."
+          },
+          "response": []
+        },
+        {
+          "name": "Update License - Add SKUs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has more SKUs\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('skus');",
+                  "    pm.expect(jsonData.skus).to.be.an('array');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"skuIds\": [\n    \"{{skuId}}\",\n    \"{{skuId2}}\",\n    \"{{skuId3}}\"\n  ],\n  \"licenseType\": \"Enterprise\",\n  \"maxActivations\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/licenses/{{licenseId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "licenses", "{{licenseId}}"]
+            },
+            "description": "Update license to add more SKUs while also updating other properties."
           },
           "response": []
         },

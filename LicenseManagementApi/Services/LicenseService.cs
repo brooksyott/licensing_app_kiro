@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using LicenseManagementApi.Data;
 using LicenseManagementApi.Models;
 using LicenseManagementApi.Models.DTOs;
@@ -14,17 +15,20 @@ public class LicenseService : ILicenseService
     private readonly ILogger<LicenseService> _logger;
     private readonly ILicenseKeyGenerator _keyGenerator;
     private readonly ICryptographyService _cryptographyService;
+    private readonly IConfiguration _configuration;
 
     public LicenseService(
         LicenseManagementDbContext context,
         ILogger<LicenseService> logger,
         ILicenseKeyGenerator keyGenerator,
-        ICryptographyService cryptographyService)
+        ICryptographyService cryptographyService,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
         _keyGenerator = keyGenerator;
         _cryptographyService = cryptographyService;
+        _configuration = configuration;
     }
 
     public async Task<ServiceResult<LicenseDto>> CreateLicenseAsync(CreateLicenseRequest request)
@@ -49,24 +53,28 @@ public class LicenseService : ILicenseService
                     "NOT_FOUND");
             }
 
-            // Validate SKU if provided
-            if (request.SkuId.HasValue)
+            // Validate SKU IDs (at least one required)
+            if (request.SkuIds == null || !request.SkuIds.Any())
             {
-                var sku = await _context.Skus.FindAsync(request.SkuId.Value);
-                if (sku == null)
-                {
-                    return ServiceResult<LicenseDto>.Failure(
-                        $"SKU with ID {request.SkuId.Value} not found",
-                        "NOT_FOUND");
-                }
+                return ServiceResult<LicenseDto>.Failure(
+                    "At least one SKU must be selected",
+                    "VALIDATION_ERROR");
+            }
 
-                // Ensure SKU belongs to the product
-                if (sku.ProductId != request.ProductId)
-                {
-                    return ServiceResult<LicenseDto>.Failure(
-                        "SKU does not belong to the specified product",
-                        "VALIDATION_ERROR");
-                }
+            // Remove duplicate SKU IDs
+            var uniqueSkuIds = request.SkuIds.Distinct().ToList();
+
+            // Verify all SKU IDs exist in database
+            var skus = await _context.Skus
+                .Where(s => uniqueSkuIds.Contains(s.Id))
+                .ToListAsync();
+
+            if (skus.Count != uniqueSkuIds.Count)
+            {
+                var invalidIds = uniqueSkuIds.Except(skus.Select(s => s.Id));
+                return ServiceResult<LicenseDto>.Failure(
+                    $"Invalid SKU IDs: {string.Join(", ", invalidIds)}",
+                    "VALIDATION_ERROR");
             }
 
             // Validate RSA key exists
@@ -105,81 +113,70 @@ public class LicenseService : ILicenseService
                     "INTERNAL_ERROR");
             }
 
-            // Create license payload for signing
-            var payload = new
-            {
-                LicenseKey = licenseKey,
-                CustomerId = request.CustomerId,
-                ProductId = request.ProductId,
-                SkuId = request.SkuId,
-                LicenseType = request.LicenseType,
-                ExpirationDate = request.ExpirationDate,
-                MaxActivations = request.MaxActivations,
-                IssuedAt = DateTime.UtcNow
-            };
-
-            var payloadJson = JsonSerializer.Serialize(payload);
-
-            // Decrypt private key and sign the payload
-            string privateKey;
-            try
-            {
-                // Note: In production, the passphrase should come from secure configuration
-                privateKey = _cryptographyService.DecryptPrivateKey(
-                    rsaKey.PrivateKeyEncrypted,
-                    Environment.GetEnvironmentVariable("RSA_KEY_PASSPHRASE") ?? "default-passphrase");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to decrypt private key for RSA key ID: {RsaKeyId}", request.RsaKeyId);
-                return ServiceResult<LicenseDto>.Failure(
-                    "Failed to decrypt RSA private key",
-                    "INTERNAL_ERROR");
-            }
-
-            string signedPayload;
-            try
-            {
-                signedPayload = _cryptographyService.SignData(payloadJson, privateKey);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to sign license payload");
-                return ServiceResult<LicenseDto>.Failure(
-                    "Failed to sign license",
-                    "INTERNAL_ERROR");
-            }
-
-            // Create license entity
+            // Create license entity first (without JWT)
+            var now = DateTime.UtcNow;
             var license = new License
             {
                 Id = Guid.NewGuid(),
                 CustomerId = request.CustomerId,
                 ProductId = request.ProductId,
-                SkuId = request.SkuId,
                 RsaKeyId = request.RsaKeyId,
                 LicenseKey = licenseKey,
                 LicenseKeyHash = licenseKeyHash,
-                SignedPayload = signedPayload,
+                SignedPayload = string.Empty, // Will be set after JWT generation
                 LicenseType = request.LicenseType,
-                ExpirationDate = request.ExpirationDate,
+                ExpirationDate = request.ExpirationDate.HasValue 
+                    ? DateTime.SpecifyKind(request.ExpirationDate.Value, DateTimeKind.Utc) 
+                    : null,
                 MaxActivations = request.MaxActivations,
                 CurrentActivations = 0,
-                Status = LicenseStatus.Active
+                Status = LicenseStatus.Active,
+                CreatedAt = now,
+                UpdatedAt = now,
+                Customer = customer,
+                Product = product,
+                RsaKey = rsaKey
             };
+
+            // Generate JWT signed payload using the license key generator
+            string signedPayload;
+            try
+            {
+                signedPayload = await _keyGenerator.GenerateAsync(license, skus);
+                license.SignedPayload = signedPayload;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to generate JWT for license");
+                return ServiceResult<LicenseDto>.Failure(
+                    "Failed to generate license JWT",
+                    "INTERNAL_ERROR");
+            }
+
+            // Create LicenseSku associations for each SKU
+            foreach (var skuId in uniqueSkuIds)
+            {
+                license.LicenseSkus.Add(new LicenseSku
+                {
+                    LicenseId = license.Id,
+                    SkuId = skuId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
 
             _context.Licenses.Add(license);
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("License created with ID: {LicenseId} for Customer: {CustomerId}", 
-                license.Id, request.CustomerId);
+            _logger.LogInformation("License created with ID: {LicenseId} for Customer: {CustomerId} with {SkuCount} SKUs", 
+                license.Id, request.CustomerId, uniqueSkuIds.Count);
 
             // Load navigation properties for DTO mapping
             await _context.Entry(license).Reference(l => l.Customer).LoadAsync();
             await _context.Entry(license).Reference(l => l.Product).LoadAsync();
-            if (license.SkuId.HasValue)
+            await _context.Entry(license).Collection(l => l.LicenseSkus).LoadAsync();
+            foreach (var licenseSku in license.LicenseSkus)
             {
-                await _context.Entry(license).Reference(l => l.Sku).LoadAsync();
+                await _context.Entry(licenseSku).Reference(ls => ls.Sku).LoadAsync();
             }
             await _context.Entry(license).Reference(l => l.RsaKey).LoadAsync();
 
@@ -203,8 +200,12 @@ public class LicenseService : ILicenseService
             CustomerName = license.Customer?.Name ?? string.Empty,
             ProductId = license.ProductId,
             ProductName = license.Product?.Name ?? string.Empty,
-            SkuId = license.SkuId,
-            SkuName = license.Sku?.Name,
+            Skus = license.LicenseSkus?.Select(ls => new LicenseSkuDto
+            {
+                SkuId = ls.SkuId,
+                SkuName = ls.Sku?.Name ?? string.Empty,
+                SkuCode = ls.Sku?.SkuCode ?? string.Empty
+            }).ToList() ?? new List<LicenseSkuDto>(),
             RsaKeyId = license.RsaKeyId,
             RsaKeyName = license.RsaKey?.Name ?? string.Empty,
             LicenseKey = license.LicenseKey,
@@ -226,7 +227,8 @@ public class LicenseService : ILicenseService
             var license = await _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
+                    .ThenInclude(ls => ls.Sku)
                 .Include(l => l.RsaKey)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
@@ -255,7 +257,7 @@ public class LicenseService : ILicenseService
             var license = await _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
                 .Include(l => l.RsaKey)
                 .FirstOrDefaultAsync(l => l.Id == id);
 
@@ -266,6 +268,49 @@ public class LicenseService : ILicenseService
                     "NOT_FOUND");
             }
 
+            // Update SKU associations if provided
+            if (request.SkuIds != null)
+            {
+                // Validate SKU IDs (at least one required)
+                if (!request.SkuIds.Any())
+                {
+                    return ServiceResult<LicenseDto>.Failure(
+                        "At least one SKU must be selected",
+                        "VALIDATION_ERROR");
+                }
+
+                // Remove duplicate SKU IDs
+                var uniqueSkuIds = request.SkuIds.Distinct().ToList();
+
+                // Verify all SKU IDs exist in database
+                var skus = await _context.Skus
+                    .Where(s => uniqueSkuIds.Contains(s.Id))
+                    .ToListAsync();
+
+                if (skus.Count != uniqueSkuIds.Count)
+                {
+                    var invalidIds = uniqueSkuIds.Except(skus.Select(s => s.Id));
+                    return ServiceResult<LicenseDto>.Failure(
+                        $"Invalid SKU IDs: {string.Join(", ", invalidIds)}",
+                        "VALIDATION_ERROR");
+                }
+
+                // Remove existing LicenseSku associations
+                _context.LicenseSkus.RemoveRange(license.LicenseSkus);
+                license.LicenseSkus.Clear();
+
+                // Create new LicenseSku associations
+                foreach (var skuId in uniqueSkuIds)
+                {
+                    license.LicenseSkus.Add(new LicenseSku
+                    {
+                        LicenseId = license.Id,
+                        SkuId = skuId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
             // Update only provided fields
             if (!string.IsNullOrEmpty(request.LicenseType))
             {
@@ -274,12 +319,40 @@ public class LicenseService : ILicenseService
 
             if (request.ExpirationDate.HasValue)
             {
-                license.ExpirationDate = request.ExpirationDate;
+                license.ExpirationDate = DateTime.SpecifyKind(request.ExpirationDate.Value, DateTimeKind.Utc);
             }
 
             if (request.MaxActivations.HasValue)
             {
                 license.MaxActivations = request.MaxActivations.Value;
+            }
+
+            license.UpdatedAt = DateTime.UtcNow;
+
+            // Regenerate JWT with updated information
+            try
+            {
+                // Load navigation properties needed for JWT generation
+                await _context.Entry(license).Collection(l => l.LicenseSkus).LoadAsync();
+                var updatedSkus = new List<Sku>();
+                foreach (var licenseSku in license.LicenseSkus)
+                {
+                    await _context.Entry(licenseSku).Reference(ls => ls.Sku).LoadAsync();
+                    if (licenseSku.Sku != null)
+                    {
+                        updatedSkus.Add(licenseSku.Sku);
+                    }
+                }
+
+                var signedPayload = await _keyGenerator.GenerateAsync(license, updatedSkus);
+                license.SignedPayload = signedPayload;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to regenerate JWT for updated license {LicenseId}", id);
+                return ServiceResult<LicenseDto>.Failure(
+                    "Failed to regenerate license JWT",
+                    "INTERNAL_ERROR");
             }
 
             await _context.SaveChangesAsync();
@@ -366,7 +439,8 @@ public class LicenseService : ILicenseService
             var query = _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
+                    .ThenInclude(ls => ls.Sku)
                 .Include(l => l.RsaKey)
                 .OrderByDescending(l => l.CreatedAt);
 
@@ -410,7 +484,8 @@ public class LicenseService : ILicenseService
             var query = _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
+                    .ThenInclude(ls => ls.Sku)
                 .Include(l => l.RsaKey)
                 .Where(l => l.CustomerId == customerId)
                 .OrderByDescending(l => l.CreatedAt);
@@ -455,7 +530,8 @@ public class LicenseService : ILicenseService
             var query = _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
+                    .ThenInclude(ls => ls.Sku)
                 .Include(l => l.RsaKey)
                 .Where(l => l.ProductId == productId)
                 .OrderByDescending(l => l.CreatedAt);
@@ -491,7 +567,8 @@ public class LicenseService : ILicenseService
             var query = _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
+                    .ThenInclude(ls => ls.Sku)
                 .Include(l => l.RsaKey)
                 .Where(l => l.Status == status)
                 .OrderByDescending(l => l.CreatedAt);
@@ -533,7 +610,8 @@ public class LicenseService : ILicenseService
             var licenses = await _context.Licenses
                 .Include(l => l.Customer)
                 .Include(l => l.Product)
-                .Include(l => l.Sku)
+                .Include(l => l.LicenseSkus)
+                    .ThenInclude(ls => ls.Sku)
                 .Include(l => l.RsaKey)
                 .ToListAsync();
 

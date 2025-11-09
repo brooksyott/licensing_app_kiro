@@ -41,6 +41,9 @@ public class SkuService : ISkuService
             _context.Skus.Add(sku);
             await _context.SaveChangesAsync();
 
+            // Load the product navigation property
+            await _context.Entry(sku).Reference(s => s.Product).LoadAsync();
+
             _logger.LogInformation("SKU created with ID: {SkuId}", sku.Id);
 
             return ServiceResult<SkuDto>.Success(MapToDto(sku));
@@ -56,7 +59,9 @@ public class SkuService : ISkuService
     {
         try
         {
-            var sku = await _context.Skus.FindAsync(id);
+            var sku = await _context.Skus
+                .Include(s => s.Product)
+                .FirstOrDefaultAsync(s => s.Id == id);
 
             if (sku == null)
             {
@@ -96,6 +101,9 @@ public class SkuService : ISkuService
             sku.Description = request.Description;
 
             await _context.SaveChangesAsync();
+
+            // Load the product navigation property
+            await _context.Entry(sku).Reference(s => s.Product).LoadAsync();
 
             _logger.LogInformation("SKU updated with ID: {SkuId}", sku.Id);
 
@@ -144,6 +152,7 @@ public class SkuService : ISkuService
             var totalCount = await _context.Skus.CountAsync();
 
             var skus = await _context.Skus
+                .Include(s => s.Product)
                 .OrderBy(s => s.Name)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -173,6 +182,7 @@ public class SkuService : ISkuService
             var totalCount = await _context.Skus.CountAsync(s => s.ProductId == productId);
 
             var skus = await _context.Skus
+                .Include(s => s.Product)
                 .Where(s => s.ProductId == productId)
                 .OrderBy(s => s.Name)
                 .Skip((page - 1) * pageSize)
@@ -200,7 +210,7 @@ public class SkuService : ISkuService
             pageSize = Math.Min(pageSize, 100);
             page = Math.Max(page, 1);
 
-            var query = _context.Skus.AsQueryable();
+            var query = _context.Skus.Include(s => s.Product).AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
@@ -233,6 +243,7 @@ public class SkuService : ISkuService
         {
             Id = sku.Id,
             ProductId = sku.ProductId,
+            ProductName = sku.Product?.Name ?? string.Empty,
             Name = sku.Name,
             SkuCode = sku.SkuCode,
             Description = sku.Description,

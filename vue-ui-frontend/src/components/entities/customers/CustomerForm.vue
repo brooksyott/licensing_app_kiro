@@ -204,7 +204,7 @@ const handleCancel = () => {
 .form-group input[type="text"]:focus,
 .form-group input[type="email"]:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #00A3AD;
 }
 
 .form-group input.error {

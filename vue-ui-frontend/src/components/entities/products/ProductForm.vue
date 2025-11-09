@@ -21,14 +21,12 @@ const emit = defineEmits<Emits>()
 const formData = ref({
   name: '',
   productCode: '',
-  version: '',
   description: ''
 })
 
 const errors = ref({
   name: '',
   productCode: '',
-  version: '',
   description: ''
 })
 
@@ -38,7 +36,6 @@ watch(() => props.product, (product) => {
     formData.value = {
       name: product.name,
       productCode: product.productCode,
-      version: product.version,
       description: product.description
     }
   }
@@ -46,7 +43,7 @@ watch(() => props.product, (product) => {
 
 const validateForm = (): boolean => {
   let isValid = true
-  errors.value = { name: '', productCode: '', version: '', description: '' }
+  errors.value = { name: '', productCode: '', description: '' }
 
   if (!formData.value.name.trim()) {
     errors.value.name = 'Name is required'
@@ -55,11 +52,6 @@ const validateForm = (): boolean => {
 
   if (!formData.value.productCode.trim()) {
     errors.value.productCode = 'Product Code is required'
-    isValid = false
-  }
-
-  if (!formData.value.version.trim()) {
-    errors.value.version = 'Version is required'
     isValid = false
   }
 
@@ -109,18 +101,6 @@ const handleCancel = () => {
             @input="errors.productCode = ''"
           />
           <span v-if="errors.productCode" class="error-message">{{ errors.productCode }}</span>
-        </div>
-
-        <div class="form-group">
-          <label for="version">Version *</label>
-          <input
-            id="version"
-            v-model="formData.version"
-            type="text"
-            :class="{ error: errors.version }"
-            @input="errors.version = ''"
-          />
-          <span v-if="errors.version" class="error-message">{{ errors.version }}</span>
         </div>
 
         <div class="form-group">
@@ -200,7 +180,7 @@ const handleCancel = () => {
 .form-group input[type="text"]:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #00A3AD;
 }
 
 .form-group input.error,

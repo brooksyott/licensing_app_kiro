@@ -8,6 +8,7 @@ interface Props {
 }
 
 interface Emits {
+  (e: 'view', license: License): void
   (e: 'edit', license: License): void
   (e: 'delete', license: License): void
 }
@@ -16,6 +17,10 @@ withDefaults(defineProps<Props>(), {
   operationLoading: false
 })
 const emit = defineEmits<Emits>()
+
+const handleView = (license: License) => {
+  emit('view', license)
+}
 
 const handleEdit = (license: License) => {
   emit('edit', license)
@@ -41,6 +46,7 @@ const formatDate = (date: string | null) => {
         <tr>
           <th>Customer Name</th>
           <th>Product Name</th>
+          <th>SKUs</th>
           <th>License Type</th>
           <th>Status</th>
           <th>Expiration Date</th>
@@ -50,7 +56,7 @@ const formatDate = (date: string | null) => {
       </thead>
       <tbody>
         <tr v-if="licenses.length === 0">
-          <td colspan="7" class="no-data">No licenses found</td>
+          <td colspan="8" class="no-data">No licenses found</td>
         </tr>
         <tr 
           v-for="license in licenses" 
@@ -59,6 +65,26 @@ const formatDate = (date: string | null) => {
         >
           <td>{{ license.customerName }}</td>
           <td>{{ license.productName }}</td>
+          <td>
+            <div class="sku-list">
+              <span 
+                v-for="(sku, index) in license.skus.slice(0, 2)" 
+                :key="sku.skuId"
+                class="sku-badge"
+              >
+                {{ sku.skuName }}
+              </span>
+              <span 
+                v-if="license.skus.length > 2" 
+                class="sku-count"
+              >
+                +{{ license.skus.length - 2 }} more
+              </span>
+              <span v-if="license.skus.length === 0" class="no-skus">
+                No SKUs
+              </span>
+            </div>
+          </td>
           <td>{{ license.licenseType }}</td>
           <td>
             <span :class="['status-badge', license.status.toLowerCase()]">
@@ -68,6 +94,7 @@ const formatDate = (date: string | null) => {
           <td>{{ formatDate(license.expirationDate) }}</td>
           <td>{{ license.currentActivations }} / {{ license.maxActivations }}</td>
           <td class="actions">
+            <button class="btn btn-view" @click="handleView(license)" :disabled="operationLoading">View</button>
             <button class="btn btn-edit" @click="handleEdit(license)" :disabled="operationLoading">Edit</button>
             <button class="btn btn-delete" @click="handleDelete(license)" :disabled="operationLoading">Delete</button>
           </td>
@@ -110,6 +137,7 @@ const formatDate = (date: string | null) => {
   padding: 1rem;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+  text-align: left;
 }
 
 .data-table tbody tr:hover {
@@ -144,6 +172,41 @@ const formatDate = (date: string | null) => {
   color: #856404;
 }
 
+.sku-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.sku-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #e3f2fd;
+  color: #1565c0;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.sku-count {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #f5f5f5;
+  color: #616161;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.no-skus {
+  color: #9e9e9e;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
 .actions {
   display: flex;
   gap: 0.5rem;
@@ -159,13 +222,22 @@ const formatDate = (date: string | null) => {
   transition: all 0.2s;
 }
 
-.btn-edit {
+.btn-view {
   background-color: #3498db;
   color: white;
 }
 
-.btn-edit:hover:not(:disabled) {
+.btn-view:hover:not(:disabled) {
   background-color: #2980b9;
+}
+
+.btn-edit {
+  background-color: #00A3AD;
+  color: white;
+}
+
+.btn-edit:hover:not(:disabled) {
+  background-color: #008A93;
 }
 
 .btn-delete {
@@ -202,6 +274,16 @@ const formatDate = (date: string | null) => {
     font-size: 0.8rem;
     padding: 0.2rem 0.6rem;
   }
+
+  .sku-badge,
+  .sku-count {
+    font-size: 0.8rem;
+    padding: 0.2rem 0.6rem;
+  }
+
+  .sku-list {
+    gap: 0.4rem;
+  }
 }
 
 /* Responsive styles for mobile */
@@ -235,6 +317,21 @@ const formatDate = (date: string | null) => {
   .status-badge {
     font-size: 0.75rem;
     padding: 0.2rem 0.5rem;
+  }
+
+  .sku-badge,
+  .sku-count {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.5rem;
+  }
+
+  .sku-list {
+    gap: 0.3rem;
+    max-width: 200px;
+  }
+
+  .no-skus {
+    font-size: 0.75rem;
   }
 }
 </style>

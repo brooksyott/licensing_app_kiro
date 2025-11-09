@@ -10,7 +10,9 @@ public class CreateLicenseRequest
     [Required]
     public Guid ProductId { get; set; }
 
-    public Guid? SkuId { get; set; }
+    [Required]
+    [MinLength(1, ErrorMessage = "At least one SKU must be selected")]
+    public List<Guid> SkuIds { get; set; } = new();
 
     [Required]
     public Guid RsaKeyId { get; set; }

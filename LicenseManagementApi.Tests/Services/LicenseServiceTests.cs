@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
 using Moq;
 using LicenseManagementApi.Data;
 using LicenseManagementApi.Models.Entities;
@@ -13,12 +14,17 @@ public class LicenseServiceTests
     private readonly Mock<ILogger<LicenseService>> _loggerMock;
     private readonly Mock<ILicenseKeyGenerator> _keyGeneratorMock;
     private readonly Mock<ICryptographyService> _cryptographyServiceMock;
+    private readonly Mock<IConfiguration> _configurationMock;
 
     public LicenseServiceTests()
     {
         _loggerMock = new Mock<ILogger<LicenseService>>();
         _keyGeneratorMock = new Mock<ILicenseKeyGenerator>();
         _cryptographyServiceMock = new Mock<ICryptographyService>();
+        _configurationMock = new Mock<IConfiguration>();
+        
+        // Setup configuration mock
+        _configurationMock.Setup(c => c["Cryptography:PrivateKeyPassphrase"]).Returns("test-passphrase");
     }
 
     private LicenseManagementDbContext CreateInMemoryContext()
@@ -79,7 +85,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         var request = new CreateLicenseRequest
         {
@@ -110,7 +117,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         var request = new CreateLicenseRequest
         {
@@ -185,7 +193,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.GetLicenseByIdAsync(licenseId);
@@ -224,7 +233,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.RevokeLicenseAsync(licenseId);
@@ -295,7 +305,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ValidateLicenseKeyAsync(licenseKey);
@@ -365,7 +376,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ValidateLicenseKeyAsync(licenseKey);
@@ -437,7 +449,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ValidateLicenseKeyAsync(licenseKey);
@@ -508,7 +521,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ValidateLicenseKeyAsync(licenseKey);
@@ -533,7 +547,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ValidateLicenseKeyAsync(licenseKey);
@@ -605,7 +620,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ActivateLicenseKeyAsync(licenseKey);
@@ -635,7 +651,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ActivateLicenseKeyAsync(licenseKey);
@@ -706,7 +723,8 @@ public class LicenseServiceTests
             context,
             _loggerMock.Object,
             _keyGeneratorMock.Object,
-            _cryptographyServiceMock.Object);
+            _cryptographyServiceMock.Object,
+            _configurationMock.Object);
 
         // Act
         var result = await service.ActivateLicenseKeyAsync(licenseKey);
@@ -717,3 +735,4 @@ public class LicenseServiceTests
         Assert.Contains("revoked", result.Data.Reason!, StringComparison.OrdinalIgnoreCase);
     }
 }
+

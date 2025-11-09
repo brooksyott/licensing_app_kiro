@@ -15,6 +15,7 @@ public class LicenseManagementDbContext : DbContext
     public DbSet<Sku> Skus { get; set; }
     public DbSet<RsaKey> RsaKeys { get; set; }
     public DbSet<License> Licenses { get; set; }
+    public DbSet<LicenseSku> LicenseSkus { get; set; }
     public DbSet<ApiKey> ApiKeys { get; set; }
 
     public override int SaveChanges()
@@ -72,6 +73,11 @@ public class LicenseManagementDbContext : DbContext
                     apiKey.CreatedAt = DateTime.UtcNow;
                 apiKey.UpdatedAt = DateTime.UtcNow;
             }
+            else if (entry.Entity is LicenseSku licenseSku)
+            {
+                if (entry.State == EntityState.Added)
+                    licenseSku.CreatedAt = DateTime.UtcNow;
+            }
         }
     }
 
@@ -97,7 +103,6 @@ public class LicenseManagementDbContext : DbContext
             entity.HasIndex(e => e.Name); // Performance index for search queries
             entity.Property(e => e.Name).IsRequired();
             entity.Property(e => e.ProductCode).IsRequired();
-            entity.Property(e => e.Version).IsRequired();
         });
 
         // SKU configuration
@@ -139,6 +144,7 @@ public class LicenseManagementDbContext : DbContext
             entity.Property(e => e.LicenseKeyHash).IsRequired();
             entity.Property(e => e.SignedPayload).IsRequired();
             entity.Property(e => e.LicenseType).IsRequired();
+            entity.Property(e => e.Status).HasConversion<string>(); // Store enum as string in database
             
             // Relationship with Customer - restrict delete
             entity.HasOne(e => e.Customer)
@@ -152,17 +158,31 @@ public class LicenseManagementDbContext : DbContext
                 .HasForeignKey(e => e.ProductId)
                 .OnDelete(DeleteBehavior.Restrict);
             
-            // Relationship with SKU - set null on delete
-            entity.HasOne(e => e.Sku)
-                .WithMany(s => s.Licenses)
-                .HasForeignKey(e => e.SkuId)
-                .OnDelete(DeleteBehavior.SetNull);
-            
             // Relationship with RsaKey - restrict delete
             entity.HasOne(e => e.RsaKey)
                 .WithMany(r => r.Licenses)
                 .HasForeignKey(e => e.RsaKeyId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // LicenseSku junction table configuration
+        modelBuilder.Entity<LicenseSku>(entity =>
+        {
+            entity.HasKey(e => new { e.LicenseId, e.SkuId });
+            entity.HasIndex(e => e.LicenseId); // Performance index for filtering by license
+            entity.HasIndex(e => e.SkuId); // Performance index for filtering by SKU
+            
+            // Relationship with License - cascade delete
+            entity.HasOne(e => e.License)
+                .WithMany(l => l.LicenseSkus)
+                .HasForeignKey(e => e.LicenseId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            // Relationship with SKU - cascade delete
+            entity.HasOne(e => e.Sku)
+                .WithMany(s => s.LicenseSkus)
+                .HasForeignKey(e => e.SkuId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // ApiKey configuration

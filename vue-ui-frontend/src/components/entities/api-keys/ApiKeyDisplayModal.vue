@@ -195,13 +195,13 @@ const handleClose = () => {
 
 .btn-copy {
   width: 100%;
-  background-color: #3498db;
+  background-color: #00A3AD;
   color: white;
   margin-bottom: 1rem;
 }
 
 .btn-copy:hover {
-  background-color: #2980b9;
+  background-color: #008A93;
 }
 
 .modal-footer {

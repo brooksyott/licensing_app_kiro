@@ -216,7 +216,7 @@ const handleCancel = () => {
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #00A3AD;
 }
 
 .form-group input.error,

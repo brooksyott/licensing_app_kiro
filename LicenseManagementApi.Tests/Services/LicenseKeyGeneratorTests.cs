@@ -1,3 +1,8 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Configuration;
+using Moq;
+using LicenseManagementApi.Data;
 using LicenseManagementApi.Services;
 
 namespace LicenseManagementApi.Tests.Services;
@@ -5,10 +10,22 @@ namespace LicenseManagementApi.Tests.Services;
 public class LicenseKeyGeneratorTests
 {
     private readonly LicenseKeyGenerator _generator;
+    private readonly Mock<ICryptographyService> _cryptographyServiceMock;
+    private readonly Mock<IConfiguration> _configurationMock;
+    private readonly Mock<ILogger<LicenseKeyGenerator>> _loggerMock;
 
     public LicenseKeyGeneratorTests()
     {
-        _generator = new LicenseKeyGenerator();
+        _cryptographyServiceMock = new Mock<ICryptographyService>();
+        _configurationMock = new Mock<IConfiguration>();
+        _loggerMock = new Mock<ILogger<LicenseKeyGenerator>>();
+        
+        var options = new DbContextOptionsBuilder<LicenseManagementDbContext>()
+            .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .Options;
+        var context = new LicenseManagementDbContext(options);
+        
+        _generator = new LicenseKeyGenerator(context, _cryptographyServiceMock.Object, _configurationMock.Object, _loggerMock.Object);
     }
 
     [Fact]

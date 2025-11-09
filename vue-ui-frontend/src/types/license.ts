@@ -1,11 +1,16 @@
+export interface LicenseSku {
+  skuId: string
+  skuName: string
+  skuCode: string
+}
+
 export interface License {
   id: string
   customerId: string
   customerName: string
   productId: string
   productName: string
-  skuId: string
-  skuName: string
+  skus: LicenseSku[]
   rsaKeyId: string
   rsaKeyName: string
   licenseType: string
@@ -14,6 +19,7 @@ export interface License {
   maxActivations: number
   currentActivations: number
   licenseKey: string
+  signedPayload: string
   createdAt: string
   updatedAt: string
 }
@@ -21,7 +27,7 @@ export interface License {
 export interface CreateLicenseDto {
   customerId: string
   productId: string
-  skuId: string
+  skuIds: string[]
   rsaKeyId: string
   licenseType: string
   expirationDate: string | null
@@ -31,7 +37,7 @@ export interface CreateLicenseDto {
 export interface UpdateLicenseDto {
   customerId: string
   productId: string
-  skuId: string
+  skuIds: string[]
   rsaKeyId: string
   licenseType: string
   expirationDate: string | null

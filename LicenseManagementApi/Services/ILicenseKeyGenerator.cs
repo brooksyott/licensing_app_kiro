@@ -1,3 +1,5 @@
+using LicenseManagementApi.Models.Entities;
+
 namespace LicenseManagementApi.Services;
 
 public interface ILicenseKeyGenerator
@@ -22,4 +24,12 @@ public interface ILicenseKeyGenerator
     /// <param name="hash">The hash to compare against</param>
     /// <returns>True if the key matches the hash, false otherwise</returns>
     bool VerifyLicenseKey(string licenseKey, string hash);
+
+    /// <summary>
+    /// Generates a JWT-based license key containing license and SKU information
+    /// </summary>
+    /// <param name="license">The license entity</param>
+    /// <param name="skus">List of SKUs associated with the license</param>
+    /// <returns>A JWT-encoded license key</returns>
+    Task<string> GenerateAsync(License license, List<Sku> skus);
 }

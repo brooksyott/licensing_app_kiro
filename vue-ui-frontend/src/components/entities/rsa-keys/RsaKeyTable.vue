@@ -96,6 +96,7 @@ const formatDate = (date: string) => {
   padding: 1rem;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+  text-align: left;
 }
 
 .data-table tbody tr:hover {

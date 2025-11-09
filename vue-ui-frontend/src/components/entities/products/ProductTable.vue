@@ -36,14 +36,13 @@ const handleDelete = (product: Product) => {
         <tr>
           <th>Name</th>
           <th>Product Code</th>
-          <th>Version</th>
           <th>Description</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr v-if="products.length === 0">
-          <td colspan="5" class="no-data">No products found</td>
+          <td colspan="4" class="no-data">No products found</td>
         </tr>
         <tr 
           v-for="product in products" 
@@ -52,7 +51,6 @@ const handleDelete = (product: Product) => {
         >
           <td>{{ product.name }}</td>
           <td>{{ product.productCode }}</td>
-          <td>{{ product.version }}</td>
           <td>{{ product.description }}</td>
           <td class="actions">
             <button class="btn btn-edit" @click="handleEdit(product)" :disabled="operationLoading">Edit</button>
@@ -97,6 +95,7 @@ const handleDelete = (product: Product) => {
   padding: 1rem;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+  text-align: left;
 }
 
 .data-table tbody tr:hover {
@@ -125,12 +124,12 @@ const handleDelete = (product: Product) => {
 }
 
 .btn-edit {
-  background-color: #3498db;
+  background-color: #00A3AD;
   color: white;
 }
 
 .btn-edit:hover:not(:disabled) {
-  background-color: #2980b9;
+  background-color: #008A93;
 }
 
 .btn-delete {

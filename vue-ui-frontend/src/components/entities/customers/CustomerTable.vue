@@ -101,6 +101,7 @@ const handleDelete = (customer: Customer) => {
   padding: 1rem;
   border-bottom: 1px solid #e9ecef;
   color: #495057;
+  text-align: left;
 }
 
 .data-table tbody tr:hover {
@@ -146,12 +147,12 @@ const handleDelete = (customer: Customer) => {
 }
 
 .btn-edit {
-  background-color: #3498db;
+  background-color: #00A3AD;
   color: white;
 }
 
 .btn-edit:hover:not(:disabled) {
-  background-color: #2980b9;
+  background-color: #008A93;
 }
 
 .btn-delete {

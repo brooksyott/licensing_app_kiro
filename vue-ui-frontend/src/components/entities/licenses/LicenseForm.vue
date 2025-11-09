@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import type { License, CreateLicenseDto, UpdateLicenseDto } from '@/types/license'
 import type { Customer } from '@/types/customer'
 import type { Product } from '@/types/product'
@@ -27,10 +27,10 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<Emits>()
 
 const formData = ref({
-  customerId: 0,
-  productId: 0,
-  skuId: 0,
-  rsaKeyId: 0,
+  customerId: '',
+  productId: '',
+  skuIds: [] as string[],
+  rsaKeyId: '',
   licenseType: '',
   expirationDate: '',
   maxActivations: 1
@@ -39,11 +39,46 @@ const formData = ref({
 const errors = ref({
   customerId: '',
   productId: '',
-  skuId: '',
+  skuIds: '',
   rsaKeyId: '',
   licenseType: '',
   expirationDate: '',
   maxActivations: ''
+})
+
+// Filter SKUs based on selected product
+const filteredSkus = computed(() => {
+  if (!formData.value.productId) {
+    return []
+  }
+  return props.skus.filter(sku => sku.productId === formData.value.productId)
+})
+
+// Group SKUs by product for better UX (now filtered by selected product)
+const skusByProduct = computed(() => {
+  const grouped = new Map<string, { productId: string; productName: string; skus: Sku[] }>()
+  
+  filteredSkus.value.forEach(sku => {
+    if (!grouped.has(sku.productId)) {
+      grouped.set(sku.productId, {
+        productId: sku.productId,
+        productName: sku.productName,
+        skus: []
+      })
+    }
+    grouped.get(sku.productId)!.skus.push(sku)
+  })
+  
+  return Array.from(grouped.values())
+})
+
+// Watch for product changes and clear SKU selection
+watch(() => formData.value.productId, (newProductId, oldProductId) => {
+  // Only clear SKUs if product actually changed and we're not in initial load
+  if (oldProductId && newProductId !== oldProductId) {
+    formData.value.skuIds = []
+    errors.value.skuIds = ''
+  }
 })
 
 // Populate form when editing
@@ -58,7 +93,7 @@ watch(() => props.license, (license) => {
     formData.value = {
       customerId: license.customerId,
       productId: license.productId,
-      skuId: license.skuId,
+      skuIds: license.skus.map(sku => sku.skuId),
       rsaKeyId: license.rsaKeyId,
       licenseType: license.licenseType,
       expirationDate: expirationDateValue,
@@ -67,10 +102,10 @@ watch(() => props.license, (license) => {
   } else {
     // Reset form for create mode
     formData.value = {
-      customerId: props.customers.length > 0 ? props.customers[0]?.id ?? 0 : 0,
-      productId: props.products.length > 0 ? props.products[0]?.id ?? 0 : 0,
-      skuId: props.skus.length > 0 ? props.skus[0]?.id ?? 0 : 0,
-      rsaKeyId: props.rsaKeys.length > 0 ? props.rsaKeys[0]?.id ?? 0 : 0,
+      customerId: props.customers.length > 0 ? props.customers[0]?.id ?? '' : '',
+      productId: props.products.length > 0 ? props.products[0]?.id ?? '' : '',
+      skuIds: [],
+      rsaKeyId: props.rsaKeys.length > 0 ? props.rsaKeys[0]?.id ?? '' : '',
       licenseType: '',
       expirationDate: '',
       maxActivations: 1
@@ -83,29 +118,29 @@ const validateForm = (): boolean => {
   errors.value = {
     customerId: '',
     productId: '',
-    skuId: '',
+    skuIds: '',
     rsaKeyId: '',
     licenseType: '',
     expirationDate: '',
     maxActivations: ''
   }
 
-  if (!formData.value.customerId || formData.value.customerId === 0) {
+  if (!formData.value.customerId) {
     errors.value.customerId = 'Customer is required'
     isValid = false
   }
 
-  if (!formData.value.productId || formData.value.productId === 0) {
+  if (!formData.value.productId) {
     errors.value.productId = 'Product is required'
     isValid = false
   }
 
-  if (!formData.value.skuId || formData.value.skuId === 0) {
-    errors.value.skuId = 'SKU is required'
+  if (!formData.value.skuIds || formData.value.skuIds.length === 0) {
+    errors.value.skuIds = 'At least one SKU must be selected'
     isValid = false
   }
 
-  if (!formData.value.rsaKeyId || formData.value.rsaKeyId === 0) {
+  if (!formData.value.rsaKeyId) {
     errors.value.rsaKeyId = 'RSA Key is required'
     isValid = false
   }
@@ -121,6 +156,24 @@ const validateForm = (): boolean => {
   }
 
   return isValid
+}
+
+// Handle checkbox selection/deselection
+const toggleSku = (skuId: string) => {
+  const index = formData.value.skuIds.indexOf(skuId)
+  if (index > -1) {
+    formData.value.skuIds.splice(index, 1)
+  } else {
+    formData.value.skuIds.push(skuId)
+  }
+  // Clear error when user makes a selection
+  if (formData.value.skuIds.length > 0) {
+    errors.value.skuIds = ''
+  }
+}
+
+const isSkuSelected = (skuId: string): boolean => {
+  return formData.value.skuIds.includes(skuId)
 }
 
 const handleSubmit = () => {
@@ -147,11 +200,11 @@ const handleCancel = () => {
           <label for="customerId">Customer *</label>
           <select
             id="customerId"
-            v-model.number="formData.customerId"
+            v-model="formData.customerId"
             :class="{ error: errors.customerId }"
             @change="errors.customerId = ''"
           >
-            <option :value="0" disabled>Select a customer</option>
+            <option value="" disabled>Select a customer</option>
             <option v-for="customer in customers" :key="customer.id" :value="customer.id">
               {{ customer.name }} ({{ customer.email }})
             </option>
@@ -163,11 +216,11 @@ const handleCancel = () => {
           <label for="productId">Product *</label>
           <select
             id="productId"
-            v-model.number="formData.productId"
+            v-model="formData.productId"
             :class="{ error: errors.productId }"
             @change="errors.productId = ''"
           >
-            <option :value="0" disabled>Select a product</option>
+            <option value="" disabled>Select a product</option>
             <option v-for="product in products" :key="product.id" :value="product.id">
               {{ product.name }} ({{ product.productCode }})
             </option>
@@ -176,30 +229,50 @@ const handleCancel = () => {
         </div>
 
         <div class="form-group">
-          <label for="skuId">SKU *</label>
-          <select
-            id="skuId"
-            v-model.number="formData.skuId"
-            :class="{ error: errors.skuId }"
-            @change="errors.skuId = ''"
-          >
-            <option :value="0" disabled>Select a SKU</option>
-            <option v-for="sku in skus" :key="sku.id" :value="sku.id">
-              {{ sku.name }} ({{ sku.skuCode }})
-            </option>
-          </select>
-          <span v-if="errors.skuId" class="error-message">{{ errors.skuId }}</span>
+          <label>SKUs *</label>
+          <div class="multi-select-container" :class="{ error: errors.skuIds }">
+            <div v-if="!formData.productId" class="no-skus-message">
+              Please select a product first to see available SKUs.
+            </div>
+            <div v-else-if="skusByProduct.length === 0" class="no-skus-message">
+              No SKUs available for this product. Please create SKUs for this product first.
+            </div>
+            <div v-for="productGroup in skusByProduct" :key="productGroup.productId" class="product-group">
+              <div class="product-header">{{ productGroup.productName }}</div>
+              <div class="sku-list">
+                <label
+                  v-for="sku in productGroup.skus"
+                  :key="sku.id"
+                  class="sku-checkbox-label"
+                >
+                  <input
+                    type="checkbox"
+                    :id="`sku-${sku.id}`"
+                    :value="sku.id"
+                    :checked="isSkuSelected(sku.id)"
+                    @change="toggleSku(sku.id)"
+                    class="sku-checkbox"
+                  />
+                  <span class="sku-info">
+                    <span class="sku-name">{{ sku.name }}</span>
+                    <span class="sku-code">({{ sku.skuCode }})</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+          <span v-if="errors.skuIds" class="error-message">{{ errors.skuIds }}</span>
         </div>
 
         <div class="form-group">
           <label for="rsaKeyId">RSA Key *</label>
           <select
             id="rsaKeyId"
-            v-model.number="formData.rsaKeyId"
+            v-model="formData.rsaKeyId"
             :class="{ error: errors.rsaKeyId }"
             @change="errors.rsaKeyId = ''"
           >
-            <option :value="0" disabled>Select an RSA key</option>
+            <option value="" disabled>Select an RSA key</option>
             <option v-for="rsaKey in rsaKeys" :key="rsaKey.id" :value="rsaKey.id">
               {{ rsaKey.name }} ({{ rsaKey.keySize }} bits)
             </option>
@@ -314,7 +387,7 @@ const handleCancel = () => {
 .form-group input[type="number"]:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #3498db;
+  border-color: #00A3AD;
 }
 
 .form-group input.error,
@@ -327,6 +400,88 @@ const handleCancel = () => {
   color: #e74c3c;
   font-size: 0.875rem;
   margin-top: 0.25rem;
+}
+
+.multi-select-container {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 0.75rem;
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: #f9f9f9;
+}
+
+.multi-select-container.error {
+  border-color: #e74c3c;
+}
+
+.no-skus-message {
+  color: #7f8c8d;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
+}
+
+.product-group {
+  margin-bottom: 1rem;
+}
+
+.product-group:last-child {
+  margin-bottom: 0;
+}
+
+.product-header {
+  font-weight: 600;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 2px solid #00A3AD;
+  font-size: 0.95rem;
+}
+
+.sku-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.sku-checkbox-label {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sku-checkbox-label:hover {
+  background-color: #e8f4f8;
+}
+
+.sku-checkbox {
+  margin-right: 0.75rem;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.sku-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.sku-name {
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.sku-code {
+  color: #7f8c8d;
+  font-size: 0.9rem;
 }
 
 .form-actions {
@@ -396,6 +551,27 @@ const handleCancel = () => {
   .form-group select {
     padding: 0.625rem;
     font-size: 0.9rem;
+  }
+
+  .multi-select-container {
+    max-height: 200px;
+    padding: 0.5rem;
+  }
+
+  .product-header {
+    font-size: 0.875rem;
+  }
+
+  .sku-checkbox-label {
+    padding: 0.375rem;
+  }
+
+  .sku-name {
+    font-size: 0.875rem;
+  }
+
+  .sku-code {
+    font-size: 0.8rem;
   }
 
   .form-actions {

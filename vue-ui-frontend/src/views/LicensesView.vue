@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import LicenseTable from '@/components/entities/licenses/LicenseTable.vue'
 import LicenseForm from '@/components/entities/licenses/LicenseForm.vue'
+import LicenseViewModal from '@/components/entities/licenses/LicenseViewModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import { licenseService } from '@/services/licenseService'
@@ -24,6 +25,7 @@ const skus = ref<Sku[]>([])
 const rsaKeys = ref<RsaKey[]>([])
 const loading = ref(false)
 const showForm = ref(false)
+const showViewModal = ref(false)
 const formMode = ref<'create' | 'edit'>('create')
 const selectedLicense = ref<License | null>(null)
 const operationLoading = ref(false)
@@ -80,6 +82,11 @@ const handleCreate = () => {
   showForm.value = true
 }
 
+const handleView = (license: License) => {
+  selectedLicense.value = license
+  showViewModal.value = true
+}
+
 const handleEdit = (license: License) => {
   formMode.value = 'edit'
   selectedLicense.value = license
@@ -125,6 +132,11 @@ const handleFormCancel = () => {
   selectedLicense.value = null
 }
 
+const handleViewModalClose = () => {
+  showViewModal.value = false
+  selectedLicense.value = null
+}
+
 onMounted(async () => {
   await loadRelatedEntities()
   await loadLicenses()
@@ -146,6 +158,7 @@ onMounted(async () => {
       :licenses="paginatedItems"
       :loading="loading"
       :operation-loading="operationLoading"
+      @view="handleView"
       @edit="handleEdit"
       @delete="handleDelete"
     />
@@ -170,6 +183,12 @@ onMounted(async () => {
       :loading="operationLoading"
       @submit="handleFormSubmit"
       @cancel="handleFormCancel"
+    />
+
+    <LicenseViewModal
+      v-if="showViewModal && selectedLicense"
+      :license="selectedLicense"
+      @close="handleViewModalClose"
     />
   </div>
 </template>

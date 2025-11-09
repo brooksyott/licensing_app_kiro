@@ -203,7 +203,6 @@ erDiagram
         Guid Id PK
         string Name
         string ProductCode UK
-        string Version
         string Description
         DateTime CreatedAt
         DateTime UpdatedAt

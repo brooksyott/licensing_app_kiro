@@ -147,7 +147,6 @@ Create a new product.
 {
   "name": "Enterprise Suite",
   "productCode": "ENT-001",
-  "version": "1.0.0",
   "description": "Enterprise software suite"
 }
 ```

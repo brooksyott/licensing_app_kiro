@@ -9,8 +9,7 @@ public class LicenseDto
     public string CustomerName { get; set; } = string.Empty;
     public Guid ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
-    public Guid? SkuId { get; set; }
-    public string? SkuName { get; set; }
+    public List<LicenseSkuDto> Skus { get; set; } = new();
     public Guid RsaKeyId { get; set; }
     public string RsaKeyName { get; set; } = string.Empty;
     public string LicenseKey { get; set; } = string.Empty;
