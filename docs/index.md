@@ -1,10 +1,17 @@
-# License Management API
+# License Management System
 
-A secure, scalable backend system built on ASP.NET Core 8.0 with PostgreSQL for managing software licenses, license keys, customers, and access control.
+A comprehensive full-stack application for managing software licenses, featuring a secure ASP.NET Core 8.0 backend API with PostgreSQL and a modern Vue.js 3 frontend.
+
+## Project Statistics
+
+- **Total Code**: 14,772 lines across 130 files
+- **Backend (C#)**: 8,517 lines in 80 files
+- **Frontend (Vue)**: 5,411 lines in 29 files
+- **Frontend (TypeScript)**: 844 lines in 21 files
 
 ## Overview
 
-The License Management API enables software vendors to:
+The License Management System enables software vendors to:
 
 - **Manage customers** and their license entitlements
 - **Define products and SKUs** for different software offerings
@@ -44,13 +51,22 @@ Automatic schema evolution with Entity Framework Core
 
 ## Technology Stack
 
+### Backend
 - **Framework**: ASP.NET Core 8.0
 - **Database**: PostgreSQL with Npgsql provider
 - **ORM**: Entity Framework Core 9.0
 - **Logging**: Serilog with console and file sinks
 - **Authentication**: Custom API key-based authentication with role-based authorization
-- **Cryptography**: RSA digital signatures for license signing
+- **Cryptography**: RSA digital signatures for license signing (JWT)
 - **Health Checks**: ASP.NET Core Health Checks with PostgreSQL connectivity verification
+
+### Frontend
+- **Framework**: Vue.js 3 with Composition API
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **Routing**: Vue Router
+- **HTTP Client**: Axios
+- **Styling**: Scoped CSS with responsive design
 
 ## Quick Links
 
@@ -62,9 +78,14 @@ Automatic schema evolution with Entity Framework Core
 
 ## Prerequisites
 
+### Backend
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [PostgreSQL 12+](https://www.postgresql.org/download/)
 - A PostgreSQL database instance running and accessible
+
+### Frontend
+- [Node.js 18+](https://nodejs.org/)
+- npm or yarn package manager
 
 ## Next Steps
 

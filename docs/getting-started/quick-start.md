@@ -1,14 +1,19 @@
 # Quick Start Guide
 
-Get the License Management API up and running in minutes.
+Get the License Management System (backend API and frontend UI) up and running in minutes.
 
 ## Prerequisites
 
 Before you begin, ensure you have:
 
+### Backend
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) installed
 - [PostgreSQL 12+](https://www.postgresql.org/download/) installed and running
 - A PostgreSQL database instance accessible
+
+### Frontend
+- [Node.js 18+](https://nodejs.org/) installed
+- npm or yarn package manager
 
 ## Installation Steps
 
@@ -172,9 +177,70 @@ Include the API key in all requests:
 curl -H "Auth_Key: your-api-key-here" http://localhost:5000/api/customers
 ```
 
+## Frontend Setup
+
+### 1. Navigate to Frontend Directory
+
+```bash
+cd vue-ui-frontend
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Configure API URL
+
+The frontend is configured to connect to `http://localhost:5000` by default. If your backend runs on a different port, update the API base URL in `src/services/api.ts`.
+
+### 4. Run the Development Server
+
+```bash
+npm run dev
+```
+
+The frontend will be available at `http://localhost:5173`
+
+### 5. Access the Application
+
+Open your browser and navigate to `http://localhost:5173`. You should see the License Management System home page.
+
+## Running Both Backend and Frontend
+
+### Terminal 1 - Backend
+```bash
+cd LicenseManagementApi
+dotnet run
+```
+
+### Terminal 2 - Frontend
+```bash
+cd vue-ui-frontend
+npm run dev
+```
+
+## Building for Production
+
+### Backend
+```bash
+cd LicenseManagementApi
+dotnet publish -c Release -o ./publish
+```
+
+### Frontend
+```bash
+cd vue-ui-frontend
+npm run build
+```
+
+The built files will be in `vue-ui-frontend/dist/`
+
 ## Next Steps
 
 - Review the [Configuration Guide](configuration.md) for production settings
 - Explore the [API Reference](../api/overview.md) to understand available endpoints
+- Learn about [Frontend Components](../frontend/components.md)
 - Import the [Postman Collection](../api/postman.md) for interactive testing
 - Learn about [Authentication](../api/authentication.md) and authorization

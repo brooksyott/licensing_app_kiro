@@ -1,6 +1,6 @@
-# License Management API Documentation
-site_name: License Management API
-site_description: A secure, scalable backend system for managing software licenses
+# License Management System Documentation
+site_name: License Management System
+site_description: A full-stack application for managing software licenses with ASP.NET Core backend and Vue.js frontend
 site_author: License Management Team
 
 # Repository
@@ -56,14 +56,20 @@ nav:
       - Quick Start: getting-started/quick-start.md
       - Configuration: getting-started/configuration.md
       - Deployment: getting-started/deployment.md
-  - API Reference:
+  - Backend API:
       - Overview: api/overview.md
       - Authentication: api/authentication.md
       - Endpoints: api/endpoints.md
       - Postman Collection: api/postman.md
+  - Frontend UI:
+      - Overview: frontend/overview.md
+      - Components: frontend/components.md
+      - Routing: frontend/routing.md
+      - State Management: frontend/state-management.md
   - Architecture:
       - Database Schema: architecture/database.md
-      - Design: architecture/design.md
+      - System Design: architecture/design.md
+      - Frontend Architecture: architecture/frontend.md
   - Development:
       - Requirements: development/requirements.md
       - Testing: development/testing.md
